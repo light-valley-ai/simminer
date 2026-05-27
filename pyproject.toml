@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "simminer"
+version = "0.1.0"
+description = "Discover, structure, and validate historical photonics simulation data for AI-assisted design workflows."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Simulation Data Miner contributors" }]
+keywords = ["photonics", "silicon-photonics", "fdtd", "lumerical", "meep", "eda", "surrogate", "dataset"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+# Dataset export to parquet + richer analytics. Core pipeline runs without these.
+data = ["numpy>=1.24", "pandas>=2.0", "pyarrow>=12"]
+# Interactive HTML report charts. Falls back to static tables without it.
+viz = ["plotly>=5.0"]
+all = ["numpy>=1.24", "pandas>=2.0", "pyarrow>=12", "plotly>=5.0"]
+dev = ["pytest>=7.0", "numpy>=1.24", "pandas>=2.0", "pyarrow>=12", "plotly>=5.0"]
+
+[project.scripts]
+simminer = "simminer.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/simminer"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
