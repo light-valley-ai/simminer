@@ -126,6 +126,15 @@ simminer validate-external SiEPIC_EBeam_PDK
 #   GDS reader    : 99.4% of 172 layouts yielded polygons
 ```
 
+Add `--json` or `--html` to emit the full report instead of the summary, and
+`-o PATH` to write it to a file (the format is inferred from the suffix if no
+flag is given):
+
+```bash
+simminer validate-external SiEPIC_EBeam_PDK --html -o validation.html
+simminer validate-external SiEPIC_EBeam_PDK --json -o validation.json
+```
+
 The Y-branch ~3 dB split is a physics check (not a metadata echo), so it
 independently confirms the S-parameter parser. See
 [`docs/STATUS.md`](docs/STATUS.md#tier-2--validated-on-real-data-siepic-ebeam-pdk)

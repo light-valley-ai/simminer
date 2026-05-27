@@ -14,7 +14,7 @@ from .datasets import build_datasets
 from .discovery import scan
 from .examples import generate
 from .pipeline import analyze
-from .reports import render_html, render_text, score_all
+from .reports import render_external_html, render_html, render_text, score_all
 from .validation import validate_analysis
 
 app = typer.Typer(
@@ -168,12 +168,30 @@ def benchmark(
 def validate_external(
     path: Path = typer.Argument(..., help="Root of a real PDK (e.g. a SiEPIC EBeam PDK checkout)."),
     json_out: bool = typer.Option(False, "--json", help="Emit full JSON."),
+    html_out: bool = typer.Option(False, "--html", help="Emit a standalone HTML report."),
+    out: Optional[Path] = typer.Option(
+        None, "-o", "--out", help="Write the selected format (--json/--html) to this file instead of stdout."
+    ),
 ) -> None:
     """Tier-2 validation: run the pipeline over a real external PDK and score it."""
+    if json_out and html_out:
+        raise typer.BadParameter("Use only one of --json or --html.")
     report_ = run_external(path)
-    if json_out:
-        _echo_json(report_)
+
+    # If -o is given without an explicit format, infer it from the file suffix.
+    if out is not None and not json_out and not html_out:
+        html_out = out.suffix.lower() in (".html", ".htm")
+        json_out = not html_out
+
+    if json_out or html_out:
+        content = render_external_html(report_) if html_out else _json.dumps(report_, indent=2)
+        if out is not None:
+            out.write_text(content)
+            typer.echo(f"{'HTML' if html_out else 'JSON'} report written to {out}")
+        else:
+            typer.echo(content)
         return
+
     disc, cls, fid = report_["discovery"], report_["classification"], report_["parser_fidelity"]
     typer.echo(f"External validation: {report_['root']}")
     typer.echo(f"  discovery     : {disc['files_discovered']} files, "
