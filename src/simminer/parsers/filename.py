@@ -22,8 +22,10 @@ from . import units
 from .lsf import _GEOMETRY_ALIASES, _NM_FIELDS, _UM_FIELDS
 
 # key = value [unit].  Handles "gap=200nm", "width=480", "Thickness =210", "Lc=10um".
+# The key is the trailing run of letters before "=" (so "..._gap=80nm" -> "gap",
+# not the whole underscore-joined prefix).
 _PARAM_RE = re.compile(
-    r"([A-Za-z_]\w*)\s*=\s*(-?\d+(?:\.\d+)?)\s*(nm|um|µm|microns?|m)?",
+    r"([A-Za-z]+)\s*=\s*(-?\d+(?:\.\d+)?)\s*(nm|um|µm|microns?|m)?",
     re.IGNORECASE,
 )
 

@@ -23,6 +23,31 @@ Each stage lives in its own subpackage (`discovery/`, `parsers/`, `geometry/`,
 `clustering/`, `datasets/`, `reports/`, `validation/`) and is independently
 importable. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
+### What it does to your data
+
+`simminer` takes a pile of inconsistently-named files and turns it into clean,
+per-component tables plus a readiness verdict:
+
+```
+  messy archive on disk                       structured, surrogate-ready output
+  ─────────────────────                       ──────────────────────────────────
+  runs/
+    yj_w500_g80.lsf      ┐                     y_splitters.parquet
+    yj_w500_g80.gds      │   ┌────────────┐      ┌──────────┬──────────┬─────────┐
+    yj_w500.s2p          ├─► │  simminer  │ ─►   │ width_nm │ gap_nm   │  S21 …  │
+    Lc10um_gap200.csv    │   │  pipeline  │      ├──────────┼──────────┼─────────┤
+    Lc10um_gap200.gds    │   └────────────┘      │   500    │   80     │ -3.1 dB │
+    copy_of_yj.s2p (dup) ┘          │            │   …      │   …      │   …     │
+                                    │            └──────────┴──────────┴─────────┘
+                                    ▼            + readiness report (HTML):
+                            features ⨝ targets     "y_splitter: Medium (0.46),
+                            per component           use a Gaussian Process,
+                                                    ~81 compute-hrs saved"
+```
+
+Want to see it run, with a talking point for every stage? See the
+**[demo walkthrough](docs/DEMO.md)** (`./demo.sh`).
+
 ## Install
 
 ```bash
@@ -56,6 +81,56 @@ simminer report ./example_repo -o report.html
 simminer validate ./example_repo
 ```
 
+Or run all of it at once with the guided demo:
+
+```bash
+./demo.sh            # add --no-pause to run straight through
+```
+
+### Example output
+
+What `analyze` and `report` print on the synthetic repo:
+
+```text
+$ simminer analyze ./example_repo
+Analyzed ./example_repo
+  runs: 66
+  components:
+    directional_coupler    29
+    y_splitter             36
+    unknown                 1
+
+$ simminer report ./example_repo -o report.html
+Surrogate readiness:
+  [y_splitter]
+     runs=36 usable=36  features=branch_angle_deg, taper_length_um, thickness_nm, width_nm
+     coverage=0.275  density=0.333  diversity=0.385  output_stability=1.0
+     readiness=0.457 (Medium)  model=Gaussian Process / Kriging (data-efficient)
+     est. compute savings: 81.0 hrs
+       ! Sparse parameter coverage; sweep underexplored ranges.
+```
+
+The readiness score tells you **whether the data is good enough to train a
+surrogate** — and what's missing — *before* you spend the compute.
+
+## Validated on real data
+
+Beyond synthetic tests, simminer is validated against the open
+[SiEPIC EBeam PDK](https://github.com/SiEPIC/SiEPIC_EBeam_PDK):
+
+```bash
+git clone --depth 1 https://github.com/SiEPIC/SiEPIC_EBeam_PDK
+simminer validate-external SiEPIC_EBeam_PDK
+#   classification: 99.7% accuracy on 323 labeled runs
+#   Y-branch loss : mean 3.126 dB (within 2.5-5 dB: 100.0%, n=56)
+#   GDS reader    : 99.4% of 172 layouts yielded polygons
+```
+
+The Y-branch ~3 dB split is a physics check (not a metadata echo), so it
+independently confirms the S-parameter parser. See
+[`docs/STATUS.md`](docs/STATUS.md#tier-2--validated-on-real-data-siepic-ebeam-pdk)
+for the full breakdown and methodology.
+
 ## MVP scope
 
 The first release deliberately targets **Y-splitters** and **directional
@@ -69,8 +144,8 @@ yet deeply parsed. See [`docs/STATUS.md`](docs/STATUS.md) for the live status.
 | Stage     | Parsed today                                  | Recognized (not parsed) |
 |-----------|-----------------------------------------------|-------------------------|
 | Setup     | `.lsf` (Lumerical script), Meep `.json`       | `.fsp`, `.ctl`          |
-| Geometry  | `.gds` (built-in reader), geometry `.json`    | `.oas`                  |
-| Results   | `.s2p` (Touchstone), `.csv` S-params/spectra, Meep flux `.csv` | `.h5`, `.mat`, `.npz` |
+| Geometry  | `.gds` (built-in reader), geometry `.json`, **filenames** (`gap=80nm`, `Lc=10um`) | `.oas`                  |
+| Results   | `.s2p` (Touchstone), **`.sparam`/`.dat` (Lumerical INTERCONNECT)**, `.csv` S-params/spectra, Meep flux `.csv` | `.h5`, `.mat`, `.npz` |
 
 ## Development
 

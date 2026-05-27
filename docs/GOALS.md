@@ -16,6 +16,49 @@ It transforms fragmented simulation artifacts into:
 **The goal is not replacing physics solvers — it is enabling AI-native photonics
 workflows on top of existing engineering data.**
 
+## Overall goal & plan (architecture)
+
+The big picture: turn scattered, engineer-local simulation artifacts into a
+validated dataset layer that AI design workflows can build on. The horizontal
+axis is the data-refinement pipeline; the vertical axis is how we *prove* each
+stage works (the validation tiers) and where it leads (the roadmap).
+
+```
+                            SIMULATION DATA MINER — GOAL & PLAN
+
+  RAW INPUTS                  CORE PIPELINE (MVP, built)                 OUTPUTS / VALUE
+  ─────────                   ──────────────────────────                ───────────────
+  Lumerical .lsf  ┐           ┌────────────┐                            ┌───────────────┐
+  INTERCONNECT    │           │ Discovery  │  scan, type-ID, dedup,     │ Searchable    │
+    .sparam/.dat  │           │            │  run grouping              │ inventory     │
+  Touchstone .s2p │  ───────▶ ├────────────┤                            ├───────────────┤
+  CSV S-param/    │           │ Metadata   │  parsers per format +      │ Per-component │
+    spectra       │           │ Extraction │  filename param mining     │ datasets      │
+  Meep json/flux  │           ├────────────┤                            │ (Parquet/CSV) │
+  GDSII layouts   │           │ Geometry   │  unit normalization,       ├───────────────┤
+  geometry .json  ┘           │ Normalize  │  feature vectors           │ Readiness     │
+                              ├────────────┤                            │ report (HTML) │
+                              │ Classify   │  component clustering      ├───────────────┤
+                              ├────────────┤                            │ Validation /  │
+                              │ Datasets + │  geometry → S-params,      │ quality score │
+                              │ Readiness  │  coverage/density/...      └───────┬───────┘
+                              └────────────┘                                    │
+                                                                                ▼
+  PROOF IT WORKS (validation tiers)                              FUTURE AI WORKFLOWS (roadmap)
+  ─────────────────────────────────                             ──────────────────────────────
+  Tier 1  synthetic + unit tests ............ ✅ built          Phase 2  surrogate training
+  Tier 2  real public PDK data (SiEPIC) ..... ✅ built                   geometry → optical prediction
+          · classification vs folder truth                     Phase 3  inverse design agents
+          · S-param physics (passivity, -3dB)                           goal → candidate geometry
+          · GDS reader on real layouts                          Phase 4  physics-aware validation
+  Tier 3  held-out surrogate (Benchmark 4) .. ⬜ next                   Maxwell residual checks
+          train geometry→S21, measure error                    Phase 5  interactive design studio
+```
+
+The same pipeline serves all three audiences: an engineer searching past work,
+a data scientist assembling a training corpus, and (later) an AI agent proposing
+new designs.
+
 ## The problem
 
 Most silicon photonics organizations accumulate years of FDTD simulations,

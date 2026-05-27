@@ -9,5 +9,6 @@ score the pipeline on the metrics from the project plan:
 """
 
 from .run import run_benchmarks
+from .external import run_external
 
-__all__ = ["run_benchmarks"]
+__all__ = ["run_benchmarks", "run_external"]

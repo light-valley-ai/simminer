@@ -9,7 +9,7 @@ from typing import Optional
 import typer
 
 from . import __version__
-from .benchmarks import run_benchmarks
+from .benchmarks import run_benchmarks, run_external
 from .datasets import build_datasets
 from .discovery import scan
 from .examples import generate
@@ -162,6 +162,30 @@ def benchmark(
     typer.echo(f"  classification accuracy : {cls['accuracy']:.1%}  (n={cls['n']})")
     meta = report_["metadata_extraction"]
     typer.echo(f"  metadata extraction acc : {meta['accuracy']:.1%}  (n={meta['n_fields']} fields)")
+
+
+@app.command("validate-external")
+def validate_external(
+    path: Path = typer.Argument(..., help="Root of a real PDK (e.g. a SiEPIC EBeam PDK checkout)."),
+    json_out: bool = typer.Option(False, "--json", help="Emit full JSON."),
+) -> None:
+    """Tier-2 validation: run the pipeline over a real external PDK and score it."""
+    report_ = run_external(path)
+    if json_out:
+        _echo_json(report_)
+        return
+    disc, cls, fid = report_["discovery"], report_["classification"], report_["parser_fidelity"]
+    typer.echo(f"External validation: {report_['root']}")
+    typer.echo(f"  discovery     : {disc['files_discovered']} files, "
+               f"{disc['logical_runs']} runs, {disc['duplicate_groups']} duplicate groups")
+    typer.echo(f"  classification: {cls['accuracy']:.1%} accuracy on {cls['n_scored']} labeled runs")
+    typer.echo(f"  S-param parser: passivity OK {fid['passivity_ok_rate']:.1%} "
+               f"of {fid['n_sparam_records']} traces")
+    if fid["ybranch_n"]:
+        typer.echo(f"  Y-branch loss : mean {fid['ybranch_insertion_loss_mean_db']} dB "
+                   f"(within 2.5-5 dB: {fid['ybranch_within_3db_rate']:.1%}, n={fid['ybranch_n']})")
+    typer.echo(f"  GDS reader    : {fid['gds_with_polygons_rate']:.1%} of "
+               f"{fid['gds_records']} layouts yielded polygons")
 
 
 if __name__ == "__main__":
