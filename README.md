@@ -116,11 +116,16 @@ surrogate** — and what's missing — *before* you spend the compute.
 ## Validated on real data
 
 Beyond synthetic tests, simminer is validated against the open
-[SiEPIC EBeam PDK](https://github.com/SiEPIC/SiEPIC_EBeam_PDK):
+[SiEPIC EBeam PDK](https://github.com/SiEPIC/SiEPIC_EBeam_PDK), which is wired
+in as a git submodule under `test_data/SiEPIC_EBeam_PDK`:
 
 ```bash
-git clone --depth 1 https://github.com/SiEPIC/SiEPIC_EBeam_PDK
-simminer validate-external SiEPIC_EBeam_PDK
+# fetch the PDK alongside the repo
+git clone --recurse-submodules <this-repo>
+# or, if you already cloned without submodules:
+git submodule update --init --depth 1
+
+simminer validate-external test_data/SiEPIC_EBeam_PDK
 #   classification: 99.7% accuracy on 323 labeled runs
 #   Y-branch loss : mean 3.126 dB (within 2.5-5 dB: 100.0%, n=56)
 #   GDS reader    : 99.4% of 172 layouts yielded polygons
@@ -131,8 +136,8 @@ Add `--json` or `--html` to emit the full report instead of the summary, and
 flag is given):
 
 ```bash
-simminer validate-external SiEPIC_EBeam_PDK --html -o validation.html
-simminer validate-external SiEPIC_EBeam_PDK --json -o validation.json
+simminer validate-external test_data/SiEPIC_EBeam_PDK --html -o validation.html
+simminer validate-external test_data/SiEPIC_EBeam_PDK --json -o validation.json
 ```
 
 The Y-branch ~3 dB split is a physics check (not a metadata echo), so it

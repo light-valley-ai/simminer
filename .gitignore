@@ -15,7 +15,5 @@ venv/
 /datasets/
 /reports/
 /example_repo/
-# external PDK checkouts used for Tier-2 validation (cloned, not vendored)
-/test_data/
 *.html
 !docs/**/*.html
